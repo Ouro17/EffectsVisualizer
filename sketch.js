@@ -2,10 +2,6 @@
 let targets = [];
 let sources = [];
 
-let sliderLineSize;
-let sliderSharpness;
-let slider64;
-
 let effects = {};
 
 function setup()
@@ -17,14 +13,14 @@ function setup()
     const circleVariables = {};
     circleVariables['height'] = new Variable('height', height);
     circleVariables['width'] = new Variable('width', width);
-    circleVariables['s64'] = new Variable('s64', 64, 1, 128, 1);
+    circleVariables['diffusion'] = new Variable('diffusion', 64, 1, 128, 1);
     circleVariables['sharpness'] = new Variable('sharpness', 63, 1, 120, 1);
     circleVariables['zoom'] = new Variable('zoom', 2, 2, 32, 1);
 
     // TODO improve this creation, too manual!
-    //s64 + sharpness * (sin(hypot(height - y, width - x) / zoom))
-    const circleFn = Function('x', 'y', 'height', 'width', 's64', 'sharpness', 'zoom',
-                              'return s64 + sharpness * (sin(hypot(height - y, width - x) / zoom))');
+    //diffusion + sharpness * (sin(hypot(height - y, width - x) / zoom))
+    const circleFn = Function('x', 'y', 'height', 'width', 'diffusion', 'sharpness', 'zoom',
+                              'return diffusion + sharpness * (sin(hypot(height - y, width - x) / zoom))');
 
     const circleEq = new Equation(circleVariables, circleFn);
     const circles = new Effect('Circles', circleEq, height * 2, width * 2);
