@@ -6,11 +6,6 @@ let sliderLineSize;
 let sliderSharpness;
 let slider64;
 
-function hypot(a, b)
-{
-    return sqrt(a*a + b*b);
-}
-
 function setup()
 {
     createCanvas(640, 480);
@@ -74,7 +69,7 @@ function draw()
 
     currentTime = new Date().getTime();
 
-	let time  = currentTime - lastTime;
+	//let time  = currentTime - lastTime;
 	lastTime = currentTime;
 
     sources = [];
