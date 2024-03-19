@@ -1,67 +1,102 @@
 class Effect
 {
-    constructor(enabled, targetFunc)
+    constructor(name, equation, height, width)
     {
-        this.enabled = enabled;
-        this.targetFunc = targetFunc;
+        this.name = name;
+
+        this.equation = equation;
+        this.buffer = [];
+        this.height = height;
+        this.width = width;
+        this.disable();
     }
 
-    calculate(s64, sharpness, lineSize)
+    enable()
     {
-        const targetFunc = [];
+        this.enabled = true;
+    }
 
-        const limitY = height * 2;
-        const limitX = width * 2;
+    disable()
+    {
+        this.enabled = false;
+    }
 
-        for(let y = 0; y < limitY; y++)
+    calculateBuffer()
+    {
+        const buffer = [];
+
+        for(let y = 0; y < this.height; y++)
         {
-            for (let x = 0; x < limitX; x++)
+            for (let x = 0; x < this.width; x++)
             {
-                const a = s64 + sharpness * (sin(hypot(height - y, width - x) / lineSize));
-                targetFunc.push(a);
+                const a = this.equation.calculate(x, y);
+                buffer.push(a);
             }
         }
 
-        return targetFunc;
+        this.buffer = buffer;
     }
 
-    createSliders()
+    moveInBuffer(time)
     {
-        let sliderLineSize;
-        let sliderSharpness;
-        let slider64;
+        // setup some nice colours, different every frame
+        // this is a palette that wraps around itself, with different period sine
+        // functions to prevent monotonous colours
+        // buildPalette();
 
+        // move plasma with more sine functions :)
+        //(height / 2) * (width * 2) + (width / 2)
+        let Windowx1 = (width / 2) + Math.floor((((width / 2)-1) * cos(time / 970)));
+        let Windowy1 = (height / 2) + Math.floor((((height / 2) - 1) * sin(time / 1230)));
 
-        slider64 = createSlider(1, 128, 64, 1);
-        slider64.position(10, height + 10);
-        slider64.size(100);
-        // slider64.changed(()=>
-        // {
-        //     calculateCircles(slider64.value(), sliderSharpness.value(), sliderLineSize.value());
-        //     represent();
-        // });
-        slider64.parent(createDiv('Slider64'));
-    
-        sliderSharpness = createSlider(1, 120, 63, 1);
-        sliderSharpness.position(10, height + 20);
-        sliderSharpness.size(100);
-        sliderSharpness.parent(createDiv('Sharpness'));
-    
-        // sliderSharpness.changed(()=>
-        // {
-        //     calculateCircles(slider64.value(), sliderSharpness.value(), sliderLineSize.value());
-        //     represent();
-        // });
-    
-        sliderLineSize = createSlider(1, 32, 16, 1);
-        sliderLineSize.position(10, height + 30);
-        sliderLineSize.size(100);
-        // sliderLineSize.changed(()=>
-        // {
-        //     calculateCircles(slider64.value(), sliderSharpness.value(), sliderLineSize.value());
-        //     represent();
-        // });
-        sliderLineSize.parent(createDiv('LineSize'));
+        // we only select the part of the precalculated buffer that we need
+        return Windowy1 * (width * 2) + Windowx1;
+    }
+
+    addSliders(x, y, distance, size)
+    {
+        this.sliders = {};
+
+        for (const [_, variable] of Object.entries(this.equation.variables))
+        {
+            if (!variable.constant)
+            {
+                y += distance;
+                this.sliders[variable.name] = this.addSlider(variable, x, y, size);
+            }
+        }
+    }
+
+    addSlider(variable, x, y, size)
+    {
+        const slider = createSlider(variable.min, variable.max, variable.currentValue, variable.step);
+
+        slider.position(x, y);
+        slider.size(size);
+
+        const div = createDiv(variable.name);
+        div.position(size + x + 10, y);
+
+        slider.changed(()=>
+        {
+            variable.currentValue = slider.value();
+            console.log("Variable %s changed to value %s", variable.name, variable.currentValue);
+            this.calculateBuffer();
+        });
+
+        return slider;
+    }
+
+    addVariable(variable)
+    {
+
+    }
+
+    deleteVariable(name)
+    {
+        // TODO Remove from view.
+        // Do we need to recalculate everything?
+        delete this.sliders[name];
     }
 
 }

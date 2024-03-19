@@ -6,43 +6,36 @@ let sliderLineSize;
 let sliderSharpness;
 let slider64;
 
+let effects = {};
+
 function setup()
 {
     createCanvas(640, 480);
 
-    slider64 = createSlider(1, 128, 64, 1);
-    slider64.position(10, height + 10);
-    slider64.size(100);
-    // slider64.changed(()=>
-    // {
-    //     calculateCircles(slider64.value(), sliderSharpness.value(), sliderLineSize.value());
-    //     represent();
-    // });
-    slider64.parent(createDiv('Slider64'));
+    // slider64 = createSlider(1, 128, 64, 1);
 
-    sliderSharpness = createSlider(1, 120, 63, 1);
-    sliderSharpness.position(10, height + 20);
-    sliderSharpness.size(100);
-    sliderSharpness.parent(createDiv('Sharpness'));
+    const circleVariables = {};
+    circleVariables['height'] = new Variable('height', height);
+    circleVariables['width'] = new Variable('width', width);
+    circleVariables['s64'] = new Variable('s64', 64, 1, 128, 1);
+    circleVariables['sharpness'] = new Variable('sharpness', 63, 1, 120, 1);
+    circleVariables['zoom'] = new Variable('zoom', 2, 2, 32, 1);
 
-    // sliderSharpness.changed(()=>
-    // {
-    //     calculateCircles(slider64.value(), sliderSharpness.value(), sliderLineSize.value());
-    //     represent();
-    // });
+    // TODO improve this creation, too manual!
+    //s64 + sharpness * (sin(hypot(height - y, width - x) / zoom))
+    const circleFn = Function('x', 'y', 'height', 'width', 's64', 'sharpness', 'zoom',
+                              'return s64 + sharpness * (sin(hypot(height - y, width - x) / zoom))');
 
-    sliderLineSize = createSlider(1, 32, 16, 1);
-    sliderLineSize.position(10, height + 30);
-    sliderLineSize.size(100);
-    // sliderLineSize.changed(()=>
-    // {
-    //     calculateCircles(slider64.value(), sliderSharpness.value(), sliderLineSize.value());
-    //     represent();
-    // });
-    sliderLineSize.parent(createDiv('LineSize'));
+    const circleEq = new Equation(circleVariables, circleFn);
+    const circles = new Effect('Circles', circleEq, height * 2, width * 2);
 
-    const circles = calculateCircles(slider64.value(), sliderSharpness.value(), sliderLineSize.value());
-    targets.push(circles);
+    circles.enable();
+    circles.calculateBuffer();
+    circles.addSliders(10, height, 30, 100);
+
+    effects[circles.name] = circles;
+
+    targets.push(circles.buffer);
 
     const wave = calculateWave();
     targets.push(wave);
@@ -55,28 +48,24 @@ function setup()
     represent(targets, sources);
 }
 
-let lastTime = 0, currentTime = 0; 
-   
+let lastTime = 0, currentTime = 0;
+
 function draw()
 {
     // frameRate(30);
     targets = [];
-    const circles = calculateCircles(slider64.value(), sliderSharpness.value(), sliderLineSize.value());
-    targets.push(circles);
+    targets.push(effects['Circles'].buffer);
 
-    const wave = calculateWave();
-    targets.push(wave);
+    // const wave = calculateWave();
+    // targets.push(wave);
 
     currentTime = new Date().getTime();
-
-	//let time  = currentTime - lastTime;
-	lastTime = currentTime;
 
     sources = [];
     sources.push(calculateSrc1(currentTime), calculateSrc2(currentTime));
 
     represent(targets, sources);
-    
+
     fps();
 }
 
@@ -127,7 +116,7 @@ function calculateCircles(s64, sharpness, lineSize)
     return targetFunc;
 }
 
-function calculateSrc1(time) 
+function calculateSrc1(time)
 {
 	// setup some nice colours, different every frame
 	// this is a palette that wraps around itself, with different period sine
@@ -143,7 +132,7 @@ function calculateSrc1(time)
 	return Windowy1 * (width * 2) + Windowx1;
 }
 
-function calculateSrc2(time) 
+function calculateSrc2(time)
 {
 	// setup some nice colours, different every frame
 	// this is a palette that wraps around itself, with different period sine
@@ -166,16 +155,16 @@ function represent(targets, sources)
     const heightMax = height * d;
     let src1 = sources[0];
     let src2 = sources[1];
-    
+
     for(let y = 0; y < heightMax; y++)
     {
         for (let x = 0; x < widthMax; x += colors)
         {
             let index = x + y * widthMax;
             let sum = 0;
-            
+
             sum += targets[0][src1];
-            sum += targets[1][src2];
+            // sum += targets[1][src2];
 
             // for (let target = 0; target < targets.length; target++)
             // {
@@ -183,7 +172,7 @@ function represent(targets, sources)
             // }
 
             const color = sum % 256;
-            
+
             // Red.
             pixels[index] = color;
             // Green.
@@ -203,4 +192,3 @@ function represent(targets, sources)
 
     updatePixels();
 }
-   
